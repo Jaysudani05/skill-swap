@@ -90,7 +90,7 @@ const HeaderNavigation = ({ user }) => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-                <img src="/src/assets/ss.png" alt="Skill Swap" className="h-20 w-auto" />
+                <img src="src\assets\ss.png" alt="Skill Swap" className="h-20 w-auto" />
               </Link>
             </div>
 
