@@ -1,0 +1,10 @@
+fastapi==0.115.0
+uvicorn==0.30.0
+sentence-transformers==3.0.1
+numpy==1.26.4
+
+# Used by the older matcher module and sentence-transformers runtime.
+scikit-learn
+
+# Used by matcher.py to load HF_TOKEN from .env
+python-dotenv

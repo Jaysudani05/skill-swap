@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Test Client</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Socket.IO Test Client</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="joinChat()">Join Chat</button>
+
+    <script>
+        const socket = io('http://localhost:3000', {
+            auth: {
+                token: 'test-token'
+            }
+        });
+
+        socket.on('connect', () => {
+            document.getElementById('status').textContent = 'Connected: ' + socket.id;
+            console.log('Connected:', socket.id);
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status').textContent = 'Disconnected';
+            console.log('Disconnected');
+        });
+
+        socket.on('connect_error', (error) => {
+            document.getElementById('status').textContent = 'Connection Error: ' + error.message;
+            console.error('Connection error:', error);
+        });
+
+        socket.on('message_received', (data) => {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = `Message: ${data.content} from ${data.sender?.username}`;
+            messagesDiv.appendChild(messageDiv);
+            console.log('Message received:', data);
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value;
+            if (content) {
+                socket.emit('new_message', {
+                    chatId: 'test-chat',
+                    content: content,
+                    sender: { _id: 'test-user', username: 'TestUser' }
+                });
+                input.value = '';
+            }
+        }
+
+        function joinChat() {
+            socket.emit('join_chat', 'test-chat');
+            console.log('Joined test-chat');
+        }
+
+        // Join chat on load
+        socket.on('connect', () => {
+            joinChat();
+        });
+    </script>
+</body>
+</html>
