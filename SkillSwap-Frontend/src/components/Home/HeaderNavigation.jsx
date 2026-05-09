@@ -17,6 +17,7 @@ import SwapRequestsService from '../../services/swapRequests.service';
 import ChatService from '../../services/chat.service';
 import NotificationService from '../../services/notification.service';
 
+
 const HeaderNavigation = ({ user }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ const HeaderNavigation = ({ user }) => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-                <img src="../assets/ss.png" alt="Skill Swap" className="h-20 w-auto" />
+                <img src="/ss.png" alt="Skill Swap" className="h-20 w-auto" />
               </Link>
             </div>
 
