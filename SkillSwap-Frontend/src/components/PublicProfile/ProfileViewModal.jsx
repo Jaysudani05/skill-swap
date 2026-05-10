@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { X, MapPin, Mail, User, Calendar, Briefcase, Globe, Phone, Award, GraduationCap, BookOpen } from 'lucide-react';
 
-const ProfileViewModal = ({ profile, isOpen, onClose }) => {
+const ProfileViewModal = ({ profile, isOpen, onClose, onConnect }) => {
   const handleEscKey = useCallback((event) => {
     if (event.key === 'Escape') {
       onClose();
@@ -256,7 +256,10 @@ const ProfileViewModal = ({ profile, isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="flex justify-end items-center px-6 py-4 bg-gray-50 border-t gap-3">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          <button 
+            onClick={() => onConnect && onConnect(profile)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
             Connect
           </button>
           <button

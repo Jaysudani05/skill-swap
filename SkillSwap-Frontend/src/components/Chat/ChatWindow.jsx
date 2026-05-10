@@ -188,6 +188,13 @@ const ChatWindow = ({ chat, onBack, onChatDeleted }) => {
     const pendingOfferRef = useRef(null); // { callId, callerId, offer }
     const pendingIceCandidatesRef = useRef([]); // [ { callId, candidate, ... } ]
 
+    // Attach local stream to video element when ActiveCallModal renders
+    useEffect(() => {
+        if (activeCall && activeCall.isVideoCall && localVideoRef.current && localStreamRef.current) {
+            localVideoRef.current.srcObject = localStreamRef.current;
+        }
+    }, [activeCall]);
+
     // Keep track for unmount cleanup
     const activeCallRef = useRef(null);
     useEffect(() => { activeCallRef.current = activeCall; }, [activeCall]);

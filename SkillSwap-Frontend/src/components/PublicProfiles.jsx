@@ -536,6 +536,11 @@ const PublicProfiles = () => {
         profile={selectedProfile}
         isOpen={showProfileModal}
         onClose={handleCloseProfileModal}
+        onConnect={(profile) => {
+          handleCloseProfileModal();
+          setSelectedProfileForSwap(profile);
+          setShowSwapModal(true);
+        }}
       />
 
       {/* Swap Request Modal */}
