@@ -12,8 +12,22 @@ export const useSocket = () => {
   return context;
 };
 
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+const getSocketURL = () => {
+  if (import.meta.env.VITE_SOCKET_URL) {
+    return import.meta.env.VITE_SOCKET_URL;
+  }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    const url = new URL(import.meta.env.VITE_API_BASE_URL);
+    return `${url.protocol}//${url.host}`;
+  }
+  if (import.meta.env.VITE_BACKEND_URL) {
+    const url = new URL(import.meta.env.VITE_BACKEND_URL);
+    return `${url.protocol}//${url.host}`;
+  }
+  return 'http://localhost:3000';
+};
+
+const SOCKET_URL = getSocketURL();
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
