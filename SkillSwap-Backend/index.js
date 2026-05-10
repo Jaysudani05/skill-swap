@@ -212,8 +212,36 @@ io.on('connection', (socket) => {
   // ─────────────────────────────────────────────────────────────────────────
 
   // Handle disconnect
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log(`User ${socket.username} disconnected`);
+    
+    // Automatically end active calls on disconnect
+    try {
+      const CallModel = require('./models/Call.model');
+      const activeCalls = await CallModel.find({
+        $or: [{ caller: socket.userId }, { recipient: socket.userId }],
+        status: { $in: ['initiated', 'ringing', 'answered'] }
+      });
+
+      for (const call of activeCalls) {
+        call.status = 'ended';
+        call.endedAt = new Date();
+        if (call.startedAt) {
+          call.duration = Math.floor((call.endedAt - call.startedAt) / 1000);
+        }
+        await call.save();
+
+        const otherUserId = call.caller.toString() === socket.userId 
+          ? call.recipient.toString() 
+          : call.caller.toString();
+
+        socket.to(`user_${otherUserId}`).emit('call:ended', {
+          callId: call._id.toString()
+        });
+      }
+    } catch (err) {
+      console.error('Error cleaning up active calls on disconnect:', err);
+    }
   });
 });
 

@@ -188,6 +188,13 @@ const ChatWindow = ({ chat, onBack, onChatDeleted }) => {
     const pendingOfferRef = useRef(null); // { callId, callerId, offer }
     const pendingIceCandidatesRef = useRef([]); // [ { callId, candidate, ... } ]
 
+    // Keep track for unmount cleanup
+    const activeCallRef = useRef(null);
+    useEffect(() => { activeCallRef.current = activeCall; }, [activeCall]);
+
+    const incomingCallRef = useRef(null);
+    useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
+
     // ── Helpers ────────────────────────────────────────────────────────────────
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -627,6 +634,18 @@ const ChatWindow = ({ chat, onBack, onChatDeleted }) => {
         socket.emit('test_connection', { chatId: chat._id, userId: user?._id });
 
         return () => {
+            // Cleanup call states if component unmounts
+            if (activeCallRef.current) {
+                const { callId, otherUserId } = activeCallRef.current;
+                CallService.endCall(callId).catch(() => {});
+                CallService.notifyCallEnded(socket, { callId, otherUserId });
+            } else if (incomingCallRef.current) {
+                const { callId, callerId } = incomingCallRef.current;
+                CallService.answerCall(callId, false).catch(() => {});
+                CallService.notifyCallRejected(socket, { callId, callerId });
+            }
+            cleanupCall();
+
             leaveChat(chat._id);
             socket.off('message_received', handleMessageReceived);
             socket.off('user_typing', handleUserTyping);
