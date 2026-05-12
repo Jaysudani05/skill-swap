@@ -31,7 +31,7 @@ const ProfileViewModal = ({ profile, isOpen, onClose, onConnect }) => {
       className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-6"
       onClick={handleOverlayClick}
     >
-      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-xl">
+      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-xl flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gray-50">
@@ -45,7 +45,7 @@ const ProfileViewModal = ({ profile, isOpen, onClose, onConnect }) => {
         </div>
 
         {/* Content - Scrollable */}
-        <div className="overflow-y-auto max-h-[calc(85vh-120px)] scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+        <div className="overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
           <div className="p-6">
 
             {/* Profile Header */}

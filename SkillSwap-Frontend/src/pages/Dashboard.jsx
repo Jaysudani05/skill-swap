@@ -46,10 +46,10 @@ const Dashboard = () => {
         const currentUserId = currentUser?._id || currentUser?.id;
 
         const publicRes = await UserProfileService.getPublicProfiles(1, 6, "");
-        const list = Array.isArray(publicRes.data) ? publicRes.data : [];
+        const list = Array.isArray(publicRes.data) ? publicRes.data.filter(Boolean) : [];
         const filtered = currentUserId
           ? list.filter((p) => {
-            const uid = p.userId?._id || p.userId || p._id;
+            const uid = p?.userId?._id || p?.userId?.id || p?.userId || p?._id || p?.id;
             return uid !== currentUserId;
           })
           : list;
@@ -99,7 +99,13 @@ const Dashboard = () => {
   };
 
   const handleSendSkillSwapRequest = async (profile, message = "") => {
-    const profileId = profile.userId?._id || profile.userId || profile._id;
+    const profileId = profile?.userId?._id || profile?.userId?.id || profile?.userId || profile?._id || profile?.id;
+    if (!profileId || typeof profileId !== 'string') {
+      alert('Unable to send request for this profile right now.');
+      setShowSwapModal(false);
+      setSelectedProfileForSwap(null);
+      return;
+    }
     if (hasAlreadySentRequest(profileId)) {
       alert('You have already sent a request to this user');
       setShowSwapModal(false);
@@ -181,15 +187,18 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {recommended.map((profile) => (
+                  {recommended.map((profile) => {
+                    const recipientId = profile?.userId?._id || profile?.userId?.id || profile?.userId || profile?._id || profile?.id;
+                    return (
                     <ProfileCard
-                      key={profile._id}
+                      key={profile?._id || profile?.id}
                       profile={profile}
                       onViewProfile={handleViewProfile}
                       onSendRequest={(p) => handleSendSkillSwapRequest(p)}
-                      hasAlreadySent={hasAlreadySentRequest(profile._id)}
+                      hasAlreadySent={hasAlreadySentRequest(recipientId)}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>

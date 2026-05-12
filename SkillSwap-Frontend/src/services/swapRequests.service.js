@@ -19,6 +19,13 @@ const SwapRequestsService = {
      * @returns {Promise} API response
      */
     sendRequest: async (recipientId, message = "") => {
+        if (!recipientId || typeof recipientId !== 'string') {
+            return {
+                success: false,
+                error: 'Invalid recipient. Please try again.'
+            };
+        }
+
         try {
             const response = await API.post('/swap-requests', {
                 recipientId,

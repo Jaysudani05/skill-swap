@@ -202,10 +202,11 @@ const PublicProfiles = () => {
 
   // Check if user already sent request to this profile
   const hasAlreadySentRequest = useCallback((profileId) => {
-    return requests.some(request =>
-      request.recipient._id === profileId &&
-      (request.status === 'pending' || request.status === 'accepted')
-    );
+    return requests.some((request) => {
+      const recipientId = request?.recipient?._id || request?.recipient?.id || request?.recipient;
+      return recipientId === profileId &&
+        (request.status === 'pending' || request.status === 'accepted');
+    });
   }, [requests]);
 
   // Fetch profiles function
@@ -279,8 +280,17 @@ const PublicProfiles = () => {
 
   // Handle skill swap request with duplicate check
   const handleSendSkillSwapRequest = useCallback(async (profile, message = "Hi! I'd like to connect for a skill swap.") => {
+    const recipientId = profile?.userId?._id || profile?.userId?.id || profile?.userId;
+
+    if (!recipientId || typeof recipientId !== 'string') {
+      showErrorNotification('Unable to send request for this profile right now.');
+      setShowSwapModal(false);
+      setSelectedProfileForSwap(null);
+      return;
+    }
+
     // Check if user already sent a request to this profile
-    if (hasAlreadySentRequest(profile.userId._id)) {
+    if (hasAlreadySentRequest(recipientId)) {
       showErrorNotification('You have already sent a request to this user');
       setShowSwapModal(false);
       setSelectedProfileForSwap(null);
@@ -297,7 +307,7 @@ const PublicProfiles = () => {
     // If message is provided (from modal), send the request
     setIsSwapRequestLoading(true);
     try {
-      const result = await SwapRequestsService.sendRequest(profile.userId._id, message);
+      const result = await SwapRequestsService.sendRequest(recipientId, message);
       console.log(profile, message);
 
       if (result.success) {
@@ -512,7 +522,7 @@ const PublicProfiles = () => {
                     profile={profile}
                     onViewProfile={handleViewProfile}
                     onSendRequest={(profile) => handleSendSkillSwapRequest(profile)}
-                    hasAlreadySent={hasAlreadySentRequest(profile._id)}
+                    hasAlreadySent={hasAlreadySentRequest(profile?.userId?._id || profile?.userId?.id || profile?.userId)}
                   />
                 ))
               }
