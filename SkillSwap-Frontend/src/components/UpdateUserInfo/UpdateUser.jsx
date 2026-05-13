@@ -33,6 +33,7 @@ const UpdateProfile = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [saving, setSaving] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
 
     const totalSteps = 6;
 
@@ -44,6 +45,77 @@ const UpdateProfile = () => {
         { number: 5, title: "Availability", icon: Calendar },
         { number: 6, title: "Time Credits", icon: Clock },
     ];
+
+    const isBlank = (value) => !value || value.trim() === "";
+    const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    const isValidPhone = (value) => {
+        const digits = value.replace(/\D/g, "");
+        return digits.length >= 7 && digits.length <= 15;
+    };
+
+    const validateForm = (data) => {
+        const nextErrors = {};
+
+        if (isBlank(data.fullname)) {
+            nextErrors.fullname = "Please enter your full name";
+        }
+
+        if (isBlank(data.headline)) {
+            nextErrors.headline = "Please enter your professional headline";
+        }
+
+        if (isBlank(data.location)) {
+            nextErrors.location = "Please enter your location";
+        }
+
+        if (isBlank(data.publicEmail)) {
+            nextErrors.publicEmail = "Please enter your public email";
+        } else if (!isValidEmail(data.publicEmail)) {
+            nextErrors.publicEmail = "Please enter a valid email address";
+        }
+
+        if (isBlank(data.phone)) {
+            nextErrors.phone = "Please enter your phone number";
+        } else if (!isValidPhone(data.phone)) {
+            nextErrors.phone = "Phone number must be valid";
+        }
+
+        if (isBlank(data.aboutMe)) {
+            nextErrors.aboutMe = "Please tell us about yourself";
+        }
+
+        if (data.experience.length === 0) {
+            nextErrors.experience = "Please add at least one experience entry";
+        } else {
+            data.experience.forEach((exp, idx) => {
+                if (isBlank(exp.title)) {
+                    nextErrors[`experience.${idx}.title`] = "Please enter your job title";
+                }
+                if (isBlank(exp.company)) {
+                    nextErrors[`experience.${idx}.company`] = "Please enter your company name";
+                }
+                if (isBlank(exp.startDate)) {
+                    nextErrors[`experience.${idx}.startDate`] = "Please enter a start date";
+                }
+                if (isBlank(exp.description)) {
+                    nextErrors[`experience.${idx}.description`] = "Please enter a description";
+                }
+            });
+        }
+
+        return nextErrors;
+    };
+
+    const getInputClasses = (hasError) => (
+        `w-full max-w-full px-4 py-3 border rounded-lg transition focus:outline-none focus:ring-2 ` +
+        (hasError
+            ? 'border-red-500 focus:ring-red-500'
+            : 'border-gray-300 focus:ring-blue-500 focus:border-transparent')
+    );
+
+    useEffect(() => {
+        setValidationErrors(validateForm(form));
+    }, [form]);
 
     // Load existing profile data
     useEffect(() => {
@@ -214,7 +286,53 @@ const UpdateProfile = () => {
         }
     };
 
+    const scrollToField = (fieldId) => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.focus({ preventScroll: true });
+        }
+    };
+
+    const scrollToFirstInvalid = (step) => {
+        if (step === 1) {
+            const stepFields = [
+                { key: 'fullname', id: 'fullname' },
+                { key: 'headline', id: 'headline' },
+                { key: 'location', id: 'location' },
+                { key: 'publicEmail', id: 'publicEmail' },
+                { key: 'phone', id: 'phone' },
+                { key: 'aboutMe', id: 'aboutMe' },
+            ];
+            const firstInvalid = stepFields.find((field) => validationErrors[field.key]);
+            if (firstInvalid) {
+                scrollToField(firstInvalid.id);
+            }
+        }
+
+        if (step === 3) {
+            if (validationErrors.experience) {
+                scrollToField('experience-section');
+                return;
+            }
+            for (let idx = 0; idx < form.experience.length; idx += 1) {
+                const fieldOrder = ['title', 'company', 'startDate', 'description'];
+                for (const field of fieldOrder) {
+                    const key = `experience.${idx}.${field}`;
+                    if (validationErrors[key]) {
+                        scrollToField(`experience-${idx}-${field}`);
+                        return;
+                    }
+                }
+            }
+        }
+    };
+
     const nextStep = () => {
+        if (!isStepValid(currentStep)) {
+            scrollToFirstInvalid(currentStep);
+            return;
+        }
         if (currentStep < totalSteps) {
             setCurrentStep(currentStep + 1);
         }
@@ -227,13 +345,14 @@ const UpdateProfile = () => {
     };
 
     const isStepValid = (step) => {
+        const stepOneKeys = ['fullname', 'headline', 'location', 'publicEmail', 'phone', 'aboutMe'];
         switch (step) {
             case 1:
-                return form.fullname.trim() !== "";
+                return stepOneKeys.every((key) => !validationErrors[key]);
             case 2:
                 return true; // Skills are optional
             case 3:
-                return true; // Experience is optional
+                return !Object.keys(validationErrors).some((key) => key.startsWith('experience'));
             case 4:
                 return true; // Education is optional
             case 5:
@@ -254,92 +373,112 @@ const UpdateProfile = () => {
             case 1:
                 return (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-2xl font-bold text-gray-800">Personal Information</h2>
                             <button
                                 type="button"
                                 onClick={saveCurrentStep}
                                 disabled={saving}
-                                className="flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                                className="flex w-full items-center justify-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                             >
                                 <Save className="w-4 h-4 mr-2" />
                                 {saving ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Full Name *
                                 </label>
                                 <input
                                     type="text"
                                     name="fullname"
+                                    id="fullname"
                                     placeholder="Enter your full name"
                                     value={form.fullname}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getInputClasses(!!validationErrors.fullname)}
                                     required
                                 />
+                                {validationErrors.fullname && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.fullname}</p>
+                                )}
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Professional Headline
                                 </label>
                                 <input
                                     type="text"
                                     name="headline"
+                                    id="headline"
                                     placeholder="e.g., Senior Software Engineer"
                                     value={form.headline}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getInputClasses(!!validationErrors.headline)}
                                 />
+                                {validationErrors.headline && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.headline}</p>
+                                )}
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Location
                                 </label>
                                 <input
                                     type="text"
                                     name="location"
+                                    id="location"
                                     placeholder="City, Country"
                                     value={form.location}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getInputClasses(!!validationErrors.location)}
                                 />
+                                {validationErrors.location && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.location}</p>
+                                )}
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Public Email
                                 </label>
                                 <input
                                     type="email"
                                     name="publicEmail"
+                                    id="publicEmail"
                                     placeholder="your.email@example.com"
                                     value={form.publicEmail}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getInputClasses(!!validationErrors.publicEmail)}
                                 />
+                                {validationErrors.publicEmail && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.publicEmail}</p>
+                                )}
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Phone
                                 </label>
                                 <input
                                     type="text"
                                     name="phone"
+                                    id="phone"
                                     placeholder="+1 (555) 123-4567"
                                     value={form.phone}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={getInputClasses(!!validationErrors.phone)}
                                 />
+                                {validationErrors.phone && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
+                                )}
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     LinkedIn URL
                                 </label>
@@ -349,23 +488,27 @@ const UpdateProfile = () => {
                                     placeholder="https://linkedin.com/in/yourprofile"
                                     value={form.linkedinUrl}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 About Me
                             </label>
                             <textarea
                                 name="aboutMe"
+                                id="aboutMe"
                                 placeholder="Tell us about yourself, your interests, and what makes you unique..."
                                 value={form.aboutMe}
                                 onChange={handleChange}
                                 rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={getInputClasses(!!validationErrors.aboutMe) + " min-h-[140px] resize-y"}
                             />
+                            {validationErrors.aboutMe && (
+                                <p className="mt-1 text-sm text-red-600">{validationErrors.aboutMe}</p>
+                            )}
                         </div>
 
                         <div className="flex items-center mt-6">
@@ -406,19 +549,19 @@ const UpdateProfile = () => {
                             <label className="block text-sm font-semibold text-gray-700 mb-3">
                                 🟢 Skills I Offer <span className="font-normal text-gray-400">(what I can teach)</span>
                             </label>
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex flex-col gap-2 mb-3 sm:flex-row">
                                 <input
                                     type="text"
                                     placeholder="e.g. Python, Photoshop, Guitar..."
                                     value={skillOfferedInput}
                                     onChange={e => setSkillOfferedInput(e.target.value)}
                                     onKeyDown={e => handleSkillKeyDown(e, 'skillsOffered', skillOfferedInput, setSkillOfferedInput)}
-                                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => addSkill('skillsOffered', skillOfferedInput, setSkillOfferedInput)}
-                                    className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition"
+                                    className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition sm:w-auto"
                                 >
                                     Add
                                 </button>
@@ -441,19 +584,19 @@ const UpdateProfile = () => {
                             <label className="block text-sm font-semibold text-gray-700 mb-3">
                                 🟣 Skills I Want to Learn <span className="font-normal text-gray-400">(what I want to pick up)</span>
                             </label>
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex flex-col gap-2 mb-3 sm:flex-row">
                                 <input
                                     type="text"
                                     placeholder="e.g. Machine Learning, Cooking, Spanish..."
                                     value={skillToLearnInput}
                                     onChange={e => setSkillToLearnInput(e.target.value)}
                                     onKeyDown={e => handleSkillKeyDown(e, 'skillsToLearn', skillToLearnInput, setSkillToLearnInput)}
-                                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => addSkill('skillsToLearn', skillToLearnInput, setSkillToLearnInput)}
-                                    className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition"
+                                    className="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition sm:w-auto"
                                 >
                                     Add
                                 </button>
@@ -475,15 +618,15 @@ const UpdateProfile = () => {
 
             case 3:
                 return (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                    <div className="space-y-6" id="experience-section">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-2xl font-bold text-gray-800">Work Experience</h2>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col gap-3 sm:flex-row">
                                 <button
                                     type="button"
                                     onClick={saveCurrentStep}
                                     disabled={saving}
-                                    className="flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                                 >
                                     <Save className="w-4 h-4 mr-2" />
                                     {saving ? 'Saving...' : 'Save Changes'}
@@ -491,12 +634,16 @@ const UpdateProfile = () => {
                                 <button
                                     type="button"
                                     onClick={addExperience}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+                                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 sm:w-auto"
                                 >
                                     Add Experience
                                 </button>
                             </div>
                         </div>
+
+                        {validationErrors.experience && (
+                            <p className="text-sm text-red-600">{validationErrors.experience}</p>
+                        )}
 
                         {form.experience.length === 0 ? (
                             <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -507,76 +654,92 @@ const UpdateProfile = () => {
                         ) : (
                             <div className="space-y-6">
                                 {form.experience.map((exp, idx) => (
-                                    <div key={idx} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                                        <div className="flex justify-between items-start mb-4">
+                                    <div key={idx} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm overflow-hidden">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
                                             <h3 className="text-lg font-semibold text-gray-800">Experience {idx + 1}</h3>
                                             <button
                                                 type="button"
                                                 onClick={() => removeExperience(idx)}
-                                                className="text-red-600 hover:text-red-800 text-sm"
+                                                className="text-red-600 hover:text-red-800 text-sm w-full text-left sm:w-auto"
                                             >
                                                 Remove
                                             </button>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
+                                            <div className="min-w-0">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
                                                 <input
                                                     type="text"
                                                     name="title"
+                                                    id={`experience-${idx}-title`}
                                                     placeholder="e.g., Software Engineer"
                                                     value={exp.title}
                                                     onChange={e => handleExperienceChange(idx, e)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className={getInputClasses(!!validationErrors[`experience.${idx}.title`])}
                                                 />
+                                                {validationErrors[`experience.${idx}.title`] && (
+                                                    <p className="mt-1 text-sm text-red-600">{validationErrors[`experience.${idx}.title`]}</p>
+                                                )}
                                             </div>
 
-                                            <div>
+                                            <div className="min-w-0">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
                                                 <input
                                                     type="text"
                                                     name="company"
+                                                    id={`experience-${idx}-company`}
                                                     placeholder="e.g., Tech Corp"
                                                     value={exp.company}
                                                     onChange={e => handleExperienceChange(idx, e)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className={getInputClasses(!!validationErrors[`experience.${idx}.company`])}
                                                 />
+                                                {validationErrors[`experience.${idx}.company`] && (
+                                                    <p className="mt-1 text-sm text-red-600">{validationErrors[`experience.${idx}.company`]}</p>
+                                                )}
                                             </div>
 
-                                            <div>
+                                            <div className="min-w-0">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                                                 <input
                                                     type="date"
                                                     name="startDate"
+                                                    id={`experience-${idx}-startDate`}
                                                     value={exp.startDate}
                                                     onChange={e => handleExperienceChange(idx, e)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className={getInputClasses(!!validationErrors[`experience.${idx}.startDate`])}
                                                 />
+                                                {validationErrors[`experience.${idx}.startDate`] && (
+                                                    <p className="mt-1 text-sm text-red-600">{validationErrors[`experience.${idx}.startDate`]}</p>
+                                                )}
                                             </div>
 
-                                            <div>
+                                            <div className="min-w-0">
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                                                 <input
                                                     type="date"
                                                     name="endDate"
                                                     value={exp.endDate}
                                                     onChange={e => handleExperienceChange(idx, e)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full max-w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="mt-4">
+                                        <div className="mt-4 min-w-0">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                                             <textarea
                                                 name="description"
+                                                id={`experience-${idx}-description`}
                                                 placeholder="Describe your role, responsibilities, and achievements..."
                                                 value={exp.description}
                                                 onChange={e => handleExperienceChange(idx, e)}
                                                 rows={3}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className={getInputClasses(!!validationErrors[`experience.${idx}.description`]) + " min-h-[120px] resize-y"}
                                             />
+                                            {validationErrors[`experience.${idx}.description`] && (
+                                                <p className="mt-1 text-sm text-red-600">{validationErrors[`experience.${idx}.description`]}</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -588,14 +751,14 @@ const UpdateProfile = () => {
             case 4:
                 return (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-2xl font-bold text-gray-800">Education</h2>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col gap-3 sm:flex-row">
                                 <button
                                     type="button"
                                     onClick={saveCurrentStep}
                                     disabled={saving}
-                                    className="flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                                 >
                                     <Save className="w-4 h-4 mr-2" />
                                     {saving ? 'Saving...' : 'Save Changes'}
@@ -603,7 +766,7 @@ const UpdateProfile = () => {
                                 <button
                                     type="button"
                                     onClick={addEducation}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+                                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 sm:w-auto"
                                 >
                                     Add Education
                                 </button>
@@ -619,13 +782,13 @@ const UpdateProfile = () => {
                         ) : (
                             <div className="space-y-6">
                                 {form.education.map((edu, idx) => (
-                                    <div key={idx} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                                        <div className="flex justify-between items-start mb-4">
+                                    <div key={idx} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm overflow-hidden">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
                                             <h3 className="text-lg font-semibold text-gray-800">Education {idx + 1}</h3>
                                             <button
                                                 type="button"
                                                 onClick={() => removeEducation(idx)}
-                                                className="text-red-600 hover:text-red-800 text-sm"
+                                                className="text-red-600 hover:text-red-800 text-sm w-full text-left sm:w-auto"
                                             >
                                                 Remove
                                             </button>
@@ -690,13 +853,13 @@ const UpdateProfile = () => {
             case 5:
                 return (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-2xl font-bold text-gray-800">Availability</h2>
                             <button
                                 type="button"
                                 onClick={saveCurrentStep}
                                 disabled={saving}
-                                className="flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                                className="flex w-full items-center justify-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                             >
                                 <Save className="w-4 h-4 mr-2" />
                                 {saving ? 'Saving...' : 'Save Changes'}
@@ -705,7 +868,7 @@ const UpdateProfile = () => {
 
                         <p className="text-gray-600">Select the days you're available for work or meetings</p>
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {AVAILABILITY_OPTIONS.map(option => (
                                 <label key={option} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                                     <input
@@ -744,13 +907,13 @@ const UpdateProfile = () => {
             case 6:
                 return (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-2xl font-bold text-gray-800">Time Credits</h2>
                             <button
                                 type="button"
                                 onClick={saveCurrentStep}
                                 disabled={saving}
-                                className="flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                                className="flex w-full items-center justify-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 sm:w-auto"
                             >
                                 <Save className="w-4 h-4 mr-2" />
                                 {saving ? 'Saving...' : 'Save Changes'}
@@ -812,7 +975,7 @@ const UpdateProfile = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6">
                 {/* Progress Header */}
                 <div className="mb-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -864,20 +1027,20 @@ const UpdateProfile = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="bg-white rounded-xl shadow-sm p-4 sm:p-8 border border-gray-100">
+                <div className="bg-white rounded-xl shadow-sm p-4 sm:p-8 border border-gray-100 overflow-hidden">
                     <form onSubmit={handleSubmit}>
                         {renderStepContent()}
 
                         {/* Navigation Buttons */}
-                        <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-8 pt-6 border-t border-gray-200">
                             <button
                                 type="button"
                                 onClick={prevStep}
                                 disabled={currentStep === 1}
-                                className={`flex items-center px-6 py-3 rounded-lg font-medium ${currentStep === 1
+                                className={`flex w-full items-center justify-center px-6 py-3 rounded-lg font-medium transition ${currentStep === 1
                                     ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
                                     : 'text-gray-700 bg-gray-200 hover:bg-gray-300'
-                                    }`}
+                                    } sm:w-auto`}
                             >
                                 <ChevronLeft className="w-5 h-5 mr-2" />
                                 Previous
@@ -888,10 +1051,10 @@ const UpdateProfile = () => {
                                     type="button"
                                     onClick={nextStep}
                                     disabled={!isStepValid(currentStep)}
-                                    className={`flex items-center px-6 py-3 rounded-lg font-medium ${isStepValid(currentStep)
+                                    className={`flex w-full items-center justify-center px-6 py-3 rounded-lg font-medium transition ${isStepValid(currentStep)
                                         ? 'text-white bg-blue-600 hover:bg-blue-700'
                                         : 'text-gray-400 bg-gray-200 cursor-not-allowed'
-                                        }`}
+                                        } sm:w-auto`}
                                 >
                                     Next
                                     <ChevronRight className="w-5 h-5 ml-2" />
@@ -901,7 +1064,7 @@ const UpdateProfile = () => {
                                     type="button"
                                     disabled={saving}
                                     onClick={handleSubmit}
-                                    className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition duration-200 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition duration-200 disabled:opacity-50 sm:w-auto"
                                 >
                                     <Check className="w-5 h-5 mr-2" />
                                     {saving ? 'Updating...' : 'Update Profile'}

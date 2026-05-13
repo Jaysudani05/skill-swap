@@ -111,42 +111,48 @@ const ActiveCallModal = ({
         )}
 
         {/* Controls */}
-        <div className="absolute bottom-8 flex space-x-6">
-            <button
-                onClick={onToggleMute}
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${isMuted ? 'bg-red-500 hover:bg-red-600' : 'bg-white bg-opacity-20 hover:bg-opacity-30'
-                    }`}
-                title={isMuted ? 'Unmute' : 'Mute'}
-            >
-                {isMuted ? (
-                    <MicOff className="w-6 h-6 text-white" />
-                ) : (
-                    <Mic className="w-6 h-6 text-white" />
-                )}
-            </button>
-
-            {isVideoCall && (
+        <div className="absolute bottom-4 left-1/2 w-full max-w-full -translate-x-1/2 px-4 pb-2 sm:bottom-6 sm:px-6">
+            <div className="mx-auto flex w-fit max-w-full items-center justify-center gap-3 rounded-full bg-black/30 px-3 py-2 backdrop-blur sm:gap-4 sm:px-4">
                 <button
-                    onClick={onToggleCamera}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${isCameraOff ? 'bg-red-500 hover:bg-red-600' : 'bg-white bg-opacity-20 hover:bg-opacity-30'
+                    onClick={onToggleMute}
+                    className={`grid h-12 w-12 place-items-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 sm:h-14 sm:w-14 ${isMuted
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
                         }`}
-                    title={isCameraOff ? 'Turn camera on' : 'Turn camera off'}
+                    title={isMuted ? 'Unmute' : 'Mute'}
                 >
-                    {isCameraOff ? (
-                        <VideoOff className="w-6 h-6 text-white" />
+                    {isMuted ? (
+                        <MicOff className="h-6 w-6" />
                     ) : (
-                        <Video className="w-6 h-6 text-white" />
+                        <Mic className="h-6 w-6" />
                     )}
                 </button>
-            )}
 
-            <button
-                onClick={onEndCall}
-                className="w-14 h-14 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                title="End call"
-            >
-                <PhoneOff className="w-6 h-6 text-white" />
-            </button>
+                {isVideoCall && (
+                    <button
+                        onClick={onToggleCamera}
+                        className={`grid h-12 w-12 place-items-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 sm:h-14 sm:w-14 ${isCameraOff
+                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                            }`}
+                        title={isCameraOff ? 'Turn camera on' : 'Turn camera off'}
+                    >
+                        {isCameraOff ? (
+                            <VideoOff className="h-6 w-6" />
+                        ) : (
+                            <Video className="h-6 w-6" />
+                        )}
+                    </button>
+                )}
+
+                <button
+                    onClick={onEndCall}
+                    className="grid h-12 w-12 place-items-center rounded-full bg-red-600 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-red-700 active:scale-95 sm:h-14 sm:w-14"
+                    title="End call"
+                >
+                    <PhoneOff className="h-6 w-6" />
+                </button>
+            </div>
         </div>
     </div>
 );
